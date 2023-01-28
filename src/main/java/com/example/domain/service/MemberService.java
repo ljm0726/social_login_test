@@ -16,13 +16,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @Transactional(readOnly = true)
-//@RequiredArgsConstructor
-public class MemberService { //ServiceImpl을 따로 만들어야 하나?
+public class MemberService {
     private final Environment env;
     private final MemberRepository memberRepository;
-
     private RestTemplate rt;
-    private HttpHeaders headers;
 
     @Autowired
     public MemberService(MemberRepository memberRepository, Environment env) {
@@ -38,19 +35,6 @@ public class MemberService { //ServiceImpl을 따로 만들어야 하나?
     }
 
     /**
-     * @param memberId
-     * @return member 정보
-     */
-//    public Member getMemberById(Long memberId) {
-//        return memberRepository.findById(memberId).get();
-//    }
-//
-//    public Member getMemberByEmail(String email) {
-//        return memberRepository.getByEmail(email);
-//    }
-
-
-    /**
      * @param email
      * @return db에 입력된 email이 있는지
      */
@@ -58,9 +42,6 @@ public class MemberService { //ServiceImpl을 따로 만들어야 하나?
         return memberRepository.existsByEmail(email);
     }
 
-//    public Member findOne(Long memberId) {
-//        return memberRepository.findOne(Member);
-//    }
 
     /**
      * @param code
@@ -70,21 +51,25 @@ public class MemberService { //ServiceImpl을 따로 만들어야 하나?
         //카카오 서버에 POST 방식으로 엑세스 토큰을 요청
 
         rt = new RestTemplate();
-
-        //HttpHeader 오브젝트 생성
         HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        //HttpBody 오브젝트 생성
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("client_id", env.getProperty("kakao.api_key"));
-        params.add("redirect_uri", env.getProperty("kakao.login.redirect_uri"));
-        params.add("code", code);
+        //HttpBody 오브젝트
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder
+                .fromHttpUrl("https://kauth.kakao.com/oauth/token")
+                .queryParam("code", code)
+                .queryParam("client_id", env.getProperty("kakao.api_key"))
+                .queryParam("redirect_uri", env.getProperty("kakao.login.redirect_uri"))
+                .queryParam("grant_type", "authorization_code");
+
         //HttpHeader와 HttpBody를 HttpEntity에 담기
-        HttpEntity<MultiValueMap<String, String>> kakaoRequest = new HttpEntity<>(params, headers);
+
+        System.out.println(uriBuilder.toUriString());
+
+        HttpEntity<MultiValueMap<String, String>> kakaoRequest = new HttpEntity<>(headers);
         //카카오 서버에 HTTP 요청 - POST
         ResponseEntity<String> response = rt.exchange(
-                "https://kauth.kakao.com/oauth/token",
+                uriBuilder.toUriString(),
                 HttpMethod.POST,
                 kakaoRequest,
                 String.class
@@ -128,7 +113,8 @@ public class MemberService { //ServiceImpl을 따로 만들어야 하나?
     public String getGoogleAccessToken(String code) {
         RestTemplate rt = new RestTemplate();
 
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl("https://www.googleapis.com/oauth2/v4/token")
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder
+                .fromHttpUrl("https://www.googleapis.com/oauth2/v4/token")
                 .queryParam("code", code)
                 .queryParam("client_id", env.getProperty("google.client_id"))
                 .queryParam("client_secret", env.getProperty("google.client_secret"))

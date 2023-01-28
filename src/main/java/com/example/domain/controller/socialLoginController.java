@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequiredArgsConstructor
 @Tag(name = "social_login", description = "social_login API 입니다.")
-@RequestMapping("/social-login")
+@RequestMapping("/members")
 public class socialLoginController {
 
     private final MemberService memberService;
